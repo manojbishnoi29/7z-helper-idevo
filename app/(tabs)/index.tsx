@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
-import * as Clipboard from 'expo-clipboard';
 import {
   FileArchive,
   FileText,
@@ -347,9 +346,30 @@ export default function HomeScreen() {
 
   const handleCopy = async () => {
     if (!found) return;
-    await Clipboard.setStringAsync(found.password);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      if (Platform.OS === 'web') {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(found.password);
+        } else {
+          // fallback: create temp textarea
+          const el = document.createElement('textarea');
+          el.value = found.password;
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand('copy');
+          document.body.removeChild(el);
+        }
+      } else {
+        const Clipboard = require('expo-clipboard');
+        await Clipboard.setStringAsync(found.password);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback feedback even if copy fails
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const handleExtract = async () => {
