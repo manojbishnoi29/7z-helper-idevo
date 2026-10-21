@@ -453,7 +453,10 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>{t.noFileSelected}</Text>
           )}
           {archiveErr && <Text style={styles.errorText}>{archiveErr}</Text>}
-          <Text style={styles.privacyNote}><ShieldCheck size={12} color="#64748B" /> {t.privacyNote}</Text>
+          <View style={styles.privacyRow}>
+            <ShieldCheck size={12} color="#64748B" />
+            <Text style={styles.privacyNote}>{t.privacyNote}</Text>
+          </View>
         </View>
 
         {/* Manual Candidates */}
@@ -843,7 +846,8 @@ const styles = StyleSheet.create({
   fileMeta: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
   emptyText: { color: '#94A3B8', fontSize: 13, marginTop: 10, fontStyle: 'italic' },
   errorText: { color: '#DC2626', fontSize: 12, marginTop: 8 },
-  privacyNote: { color: '#64748B', fontSize: 11, marginTop: 10 },
+  privacyRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
+  privacyNote: { color: '#64748B', fontSize: 11, flex: 1 },
   hint: { color: '#64748B', fontSize: 12, marginBottom: 8 },
   textArea: {
     borderWidth: 1,
