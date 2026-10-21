@@ -347,26 +347,22 @@ export default function HomeScreen() {
   const handleCopy = async () => {
     if (!found) return;
     try {
-      if (Platform.OS === 'web') {
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(found.password);
-        } else {
-          // fallback: create temp textarea
-          const el = document.createElement('textarea');
-          el.value = found.password;
-          document.body.appendChild(el);
-          el.select();
-          document.execCommand('copy');
-          document.body.removeChild(el);
-        }
+      if (typeof navigator !== 'undefined' && (navigator as any).clipboard?.writeText) {
+        await (navigator as any).clipboard.writeText(found.password);
+      } else if (typeof document !== 'undefined') {
+        const el = document.createElement('textarea');
+        el.value = found.password;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
       } else {
-        const Clipboard = require('expo-clipboard');
-        await Clipboard.setStringAsync(found.password);
+        // Native fallback: show password so user can copy manually
+        Alert.alert(t.copied, found.password);
       }
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback feedback even if copy fails
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
