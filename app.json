@@ -1,13 +1,21 @@
 {
   "expo": {
-    "name": "ideavo-expo",
-    "slug": "ideavo-expo",
+    "name": "7z Password Recovery Helper",
+    "slug": "7z-password-recovery-helper",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
-    "userInterfaceStyle": "automatic",
+    "scheme": "szrecovery",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "android": {
+      "package": "com.sevenzrecovery.helper",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#0F172A"
+      },
+      "permissions": []
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -18,8 +26,7 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font",
-      "expo-web-browser"
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
