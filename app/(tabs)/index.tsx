@@ -12,7 +12,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
 import {
   FileArchive,
   FileText,
@@ -101,12 +100,12 @@ export default function HomeScreen() {
     try {
       const res = await DocumentPicker.getDocumentAsync({
         type: '*/*',
-        copyToCacheDirectory: true,
+        copyToCacheDirectory: false,
       });
       if (res.canceled || !res.assets?.[0]) return;
-      const a = res.assets[0];
-      const name = a.name ?? 'archive.7z';
-      const size = a.size ?? 0;
+      const a = res.assets[0] as any;
+      const name: string = a.name ?? 'archive.7z';
+      const size: number = a.size ?? a.file?.size ?? 0;
       const valid = name.toLowerCase().endsWith('.7z');
       setArchive({ uri: a.uri, name, size, valid });
       setArchiveErr(valid ? null : t.invalidArchive);
@@ -115,36 +114,52 @@ export default function HomeScreen() {
       setFound(null);
     } catch (e: any) {
       setArchiveErr(e?.message ?? 'Picker failed');
+      Alert.alert('Error', e?.message ?? 'Picker failed');
     }
+  };
+
+  const readTxtFileContent = async (asset: any): Promise<string> => {
+    // 1. Web: DocumentPicker provides asset.file (native File object)
+    if (asset.file && typeof asset.file.text === 'function') {
+      return await asset.file.text();
+    }
+    // 2. Try fetch on blob: / file: / content: uri (works on web)
+    try {
+      const resp = await fetch(asset.uri);
+      if (resp.ok) {
+        return await resp.text();
+      }
+    } catch {}
+    // 3. Native fallback: use expo-file-system only on native (never on web)
+    if (Platform.OS !== 'web') {
+      try {
+        const FS: any = await import('expo-file-system');
+        if (FS.readAsStringAsync) {
+          return await FS.readAsStringAsync(asset.uri, { encoding: 'utf8' });
+        }
+        if (FS.File) {
+          const file = new FS.File(asset.uri);
+          return await file.text();
+        }
+      } catch {}
+    }
+    return '';
   };
 
   const pickTxt = async () => {
     try {
       const res = await DocumentPicker.getDocumentAsync({
         type: ['text/plain', 'text/*', '*/*'],
-        copyToCacheDirectory: true,
+        copyToCacheDirectory: false,
       });
       if (res.canceled || !res.assets?.[0]) return;
-      const uri = res.assets[0].uri;
+      const asset: any = res.assets[0];
 
-      // Read file as UTF-8 — handle both legacy and new FileSystem API
-      let content = '';
-      try {
-        // Try legacy API first
-        const legacy = FileSystem as any;
-        if (legacy.readAsStringAsync) {
-          content = await legacy.readAsStringAsync(uri, { encoding: 'utf8' });
-        } else if (legacy.File) {
-          const file = new legacy.File(uri);
-          content = await file.text();
-        } else {
-          // fallback fetch
-          const resp = await fetch(uri);
-          content = await resp.text();
-        }
-      } catch {
-        const resp = await fetch(uri);
-        content = await resp.text();
+      const content = await readTxtFileContent(asset);
+
+      if (!content && asset.size === 0) {
+        Alert.alert('Error', lang === 'hi' ? 'TXT खाली है' : 'TXT file is empty');
+        return;
       }
 
       const parsed = parseTxtContent(content);
