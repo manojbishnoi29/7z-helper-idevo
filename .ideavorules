@@ -1,0 +1,109 @@
+# Project Development Guidelines
+
+This is a React Native Expo project with bun as the package manager. It is ABSOLUTELY CRITICAL you follow these guidelines.
+
+GENERAL GUIDELINES:
+
+File Structure:
+- Organize files by feature or route, not by type
+- Keep component files focused on a single responsibility
+- Use proper TypeScript typing throughout the project
+
+For styling:
+- Use React Native's built-in styling
+
+For state management:
+- Use React's built-in useState and useContext for simple state
+- For complex state, prefer lightweight solutions like Zustand or Jotai
+
+For data fetching:
+- Use React Query (TanStack Query) or SWR
+- For GraphQL, use Apollo Client or urql
+
+Always provide feature/content rich screens:
+- Always include a index.tsx tab as the main tab screen
+- DO NOT create blank screens, each screen should be feature/content rich
+- Include all UI states (loading, empty, error, success)
+- Include all possible interactions (e.g., buttons, links, etc.)
+- Include all possible navigation states (e.g., back, forward, etc.)
+
+For photos:
+- Unless specified by the user, ALWAYS uses stock photos from Pexels where appropriate, only valid URLs you know exist. NEVER downloads the images and only links to them in image tags.
+
+For validating changes:
+- Use `bun run typecheck` for fast TypeScript validation
+- NEVER run build or dev command unless user explicitly requests it
+- typecheck is faster and catches all type errors without generating files
+
+EXPO CONFIGURATION:
+
+Define app configuration in app.json:
+- Set appropriate name, slug, and version
+- Configure icons and splash screens
+- Set orientation preferences
+- Define any required permissions
+
+For plugins and additional native capabilities:
+- Use Expo's config plugins system
+- Install required packages with `bun expo install`
+
+For accessing device features:
+- Use Expo modules (e.g., `expo-camera`, `expo-location`)
+- Install with `bun expo install` not npm/yarn
+
+UI COMPONENTS:
+
+Prefer built-in React Native components for core UI elements:
+- View, Text, TextInput, ScrollView, FlatList, etc.
+- Image for displaying images
+- TouchableOpacity or Pressable for press interactions
+
+For advanced components, use libraries compatible with Expo:
+- React Native Paper
+- Native Base
+- React Native Elements
+
+Icons:
+- Use `lucide-react-native` for various icon sets
+
+PERFORMANCE CONSIDERATIONS:
+
+- Use memo and useCallback for expensive components/functions
+- Implement virtualized lists (FlatList, SectionList) for large data sets
+- Use appropriate image sizes and formats
+- Implement proper list item key patterns
+- Minimize JS thread blocking operations
+
+DESIGN PATTERNS:
+
+Follow platform-specific design guidelines:
+- iOS: Human Interface Guidelines
+- Android: Material Design
+
+Component structure:
+- Create reusable components
+- Implement proper prop validation with TypeScript
+- Use React Native's built-in Platform API for platform-specific code
+
+For form handling:
+- Use Formik or React Hook Form
+- Implement proper validation (Yup, Zod)
+
+EXAMPLE STRUCTURE:
+
+```
+app/                        # App screens
+├── (tabs)/
+│    ├── index.tsx          # Root tab IMPORTANT
+│    └── _layout.tsx        # Root tab layout
+├── _layout.tsx             # Root layout
+├── assets/                 # Static assets
+├── components/             # Shared components
+├── hooks/  
+    └── useFrameworkReady.ts
+├── constants/              # App constants
+├── app.json                # Expo config
+├── expo-env.d.ts           # Expo environment types
+├── tsconfig.json           # TypeScript config
+└── package.json            # Package dependencies
+```
