@@ -11,7 +11,6 @@ import {
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
-import * as DocumentPicker from 'expo-document-picker';
 import {
   FileArchive,
   FileText,
@@ -96,9 +95,73 @@ export default function HomeScreen() {
 
   const toggleLang = () => setLang((p) => (p === 'hi' ? 'en' : 'hi'));
 
+  // Web-safe file picker helpers - avoid expo-document-picker on web (Platform.isDOMAvailable bug)
+  const pickFileWeb = (accept: string): Promise<File | null> => {
+    return new Promise((resolve) => {
+      if (typeof document === 'undefined') {
+        resolve(null);
+        return;
+      }
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = accept;
+      input.style.display = 'none';
+      document.body.appendChild(input);
+      let resolved = false;
+      const cleanup = (file: File | null) => {
+        if (resolved) return;
+        resolved = true;
+        try {
+          document.body.removeChild(input);
+        } catch {}
+        resolve(file);
+      };
+      input.onchange = () => {
+        const file = (input.files && input.files[0]) ? input.files[0] : null;
+        cleanup(file);
+      };
+      input.addEventListener('cancel', () => cleanup(null));
+      // Fallback: if user cancels without event, focus returns
+      const onFocus = () => {
+        setTimeout(() => {
+          if (!input.files || input.files.length === 0) {
+            // still no file, but don't auto-cancel if dialog still open - check if input removed
+            if (document.body.contains(input)) {
+              // wait a bit more, but if still no file after 1s, assume cancel
+            }
+          }
+        }, 800);
+      };
+      window.addEventListener('focus', onFocus, { once: true });
+      input.click();
+      // Safety timeout: if dialog never returns after 5 min, cleanup
+      setTimeout(() => {
+        if (document.body.contains(input) && !resolved) {
+          // keep listening, don't force close
+        }
+      }, 300000);
+    });
+  };
+
   const pickArchive = async () => {
     try {
-      const res = await DocumentPicker.getDocumentAsync({
+      if (Platform.OS === 'web') {
+        const file = await pickFileWeb('.7z,application/x-7z-compressed,*/*');
+        if (!file) return;
+        const name = file.name || 'archive.7z';
+        const size = file.size || 0;
+        const valid = name.toLowerCase().endsWith('.7z');
+        const uri = URL.createObjectURL(file);
+        setArchive({ uri, name, size, valid });
+        setArchiveErr(valid ? null : t.invalidArchive);
+        setStatus('idle');
+        setStatusMsg('');
+        setFound(null);
+        return;
+      }
+      // Native: dynamic import to avoid loading web-buggy module on web
+      const DocPicker: any = await import('expo-document-picker');
+      const res = await DocPicker.getDocumentAsync({
         type: '*/*',
         copyToCacheDirectory: false,
       });
@@ -118,50 +181,52 @@ export default function HomeScreen() {
     }
   };
 
-  const readTxtFileContent = async (asset: any): Promise<string> => {
-    // 1. Web: DocumentPicker provides asset.file (native File object)
-    if (asset.file && typeof asset.file.text === 'function') {
-      return await asset.file.text();
-    }
-    // 2. Try fetch on blob: / file: / content: uri (works on web)
-    try {
-      const resp = await fetch(asset.uri);
-      if (resp.ok) {
-        return await resp.text();
-      }
-    } catch {}
-    // 3. Native fallback: use expo-file-system only on native (never on web)
-    if (Platform.OS !== 'web') {
-      try {
-        const FS: any = await import('expo-file-system');
-        if (FS.readAsStringAsync) {
-          return await FS.readAsStringAsync(asset.uri, { encoding: 'utf8' });
-        }
-        if (FS.File) {
-          const file = new FS.File(asset.uri);
-          return await file.text();
-        }
-      } catch {}
-    }
-    return '';
-  };
-
   const pickTxt = async () => {
     try {
-      const res = await DocumentPicker.getDocumentAsync({
+      if (Platform.OS === 'web') {
+        const file = await pickFileWeb('.txt,text/plain,*/*');
+        if (!file) return;
+        const content = await file.text();
+        const parsed = parseTxtContent(content);
+        setCandidates(parsed.candidates);
+        setTxtInfo({
+          total: parsed.totalLines,
+          valid: parsed.validCount,
+          hadBom: parsed.hadBom,
+          preview: parsed.candidates.slice(0, 5),
+        });
+        setStatus('idle');
+        setStatusMsg('');
+        setFound(null);
+        return;
+      }
+      const DocPicker: any = await import('expo-document-picker');
+      const res = await DocPicker.getDocumentAsync({
         type: ['text/plain', 'text/*', '*/*'],
         copyToCacheDirectory: false,
       });
       if (res.canceled || !res.assets?.[0]) return;
       const asset: any = res.assets[0];
-
-      const content = await readTxtFileContent(asset);
-
-      if (!content && asset.size === 0) {
-        Alert.alert('Error', lang === 'hi' ? 'TXT खाली है' : 'TXT file is empty');
-        return;
+      let content = '';
+      if (asset.file && typeof asset.file.text === 'function') {
+        content = await asset.file.text();
+      } else {
+        try {
+          const resp = await fetch(asset.uri);
+          if (resp.ok) content = await resp.text();
+        } catch {}
+        if (!content && Platform.OS !== 'web') {
+          try {
+            const FS: any = await import('expo-file-system');
+            if (FS.readAsStringAsync) {
+              content = await FS.readAsStringAsync(asset.uri, { encoding: 'utf8' });
+            } else if (FS.File) {
+              const file = new FS.File(asset.uri);
+              content = await file.text();
+            }
+          } catch {}
+        }
       }
-
       const parsed = parseTxtContent(content);
       setCandidates(parsed.candidates);
       setTxtInfo({
