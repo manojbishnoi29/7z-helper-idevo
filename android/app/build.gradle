@@ -131,8 +131,6 @@ android {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
 }
-
-// Apply static values from `gradle.properties` to the `android.packagingOptions`
 // Accepts values in comma delimited lists, example:
 // android.packagingOptions.pickFirsts=/LICENSE,**/picasa.ini
 ["pickFirsts", "excludes", "merges", "doNotStrip"].each { prop ->
@@ -173,6 +171,10 @@ dependencies {
             implementation("com.facebook.fresco:animated-webp:${expoLibs.versions.fresco.get()}")
         }
     }
+
+    // Real 7z AES-256 password verification & extraction engine (native libs included for arm64-v8a/armeabi-v7a/x86_64)
+    implementation 'net.sf.sevenzipjbinding:sevenzipjbinding:16.02-2.01'
+    implementation 'net.sf.sevenzipjbinding:sevenzipjbinding-all-platforms:16.02-2.01'
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
