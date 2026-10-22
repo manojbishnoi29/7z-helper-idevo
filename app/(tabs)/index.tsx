@@ -145,7 +145,7 @@ export default function HomeScreen() {
 
   const pickArchive = async () => {
     try {
-      if (Platform.OS === 'web') {
+      if ((Platform.OS as string) === 'web') {
         const file = await pickFileWeb('.7z,application/x-7z-compressed,*/*');
         if (!file) return;
         const name = file.name || 'archive.7z';
@@ -183,7 +183,7 @@ export default function HomeScreen() {
 
   const pickTxt = async () => {
     try {
-      if (Platform.OS === 'web') {
+      if ((Platform.OS as string) === 'web') {
         const file = await pickFileWeb('.txt,text/plain,*/*');
         if (!file) return;
         const content = await file.text();
@@ -215,7 +215,7 @@ export default function HomeScreen() {
           const resp = await fetch(asset.uri);
           if (resp.ok) content = await resp.text();
         } catch {}
-        if (!content && Platform.OS !== 'web') {
+        if (!content && (Platform.OS as string) !== 'web') {
           try {
             const FS: any = await import('expo-file-system');
             if (FS.readAsStringAsync) {
